@@ -17,7 +17,6 @@ import base64
 import datetime
 import hashlib
 import hmac
-from typing import Optional
 
 import phantom.app as phantom
 import requests
@@ -58,7 +57,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         status_code = response.status_code
         try:
             error_text = response.text
-        except:
+        except Exception:
             error_text = "Cannot parse error details"
 
         message = f"Status Code: {status_code}. Data from server:\n{error_text}\n"
@@ -97,7 +96,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         else:
             return RetVal(phantom.APP_SUCCESS, r.text)
 
-    def _request(self, method: str, uri: str, action_result, body: Optional[bytes] = None) -> RetVal:
+    def _request(self, method: str, uri: str, action_result, body: bytes | None = None) -> RetVal:
         digester = hmac.new(self._token_key.encode(), None, hashlib.sha256)
         digester.update(f"{method}{uri}".encode())
         digester = hmac.new(digester.digest(), None, hashlib.sha256)
@@ -115,7 +114,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
                 headers={
                     "Authorization": f"bhesignature {self._token_id}",
                     "RequestDate": datetime_formatted,
-                    "Signature": base64.b64encode(digester.digest()),
+                    "Signature": base64.b64encode(digester.digest()).decode("ascii"),
                     "Content-Type": "application/json",
                 },
                 data=body,
@@ -138,17 +137,18 @@ class SpecteropsbloodhoundConnector(BaseConnector):
             return action_result.get_status()
 
         action_result.add_data(response)
-        self.save_progress("⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
-        self.save_progress("⠘⢿⣿⣿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀⠀")
-        self.save_progress("⠀⠈⢿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣿⣶⣦⣤⣄⣀⠀")
-        self.save_progress("⠀⠀⠈⠻⣿⣿⣦⣤⣄⣤⣠⣠⣀⣴⣾⣿⣦⡀⠀⠀⠉⠙⠛⠻⣿⣿⡿⠁")
-        self.save_progress("⠀⠀⠀⠀⠈⠙⠻⠿⠿⠿⠿⠿⠿⣿⣿⣿⣿⠇⠀⠀⠀⠀⢀⣾⣿⡟⠁⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠹⠏⠁⠀⠀⠀⠀⠀⣾⣿⡿⠀⠀⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⣶⣶⣆⠀⠀⠀⠀⠀⠀⣀⣠⣾⣿⡟⠀⠀⠀⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣧⠀⠀⣰⣾⣿⣿⠿⠟⠋⠀⠀⠀⠀⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣧⣼⣿⡿⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
-        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀ ⣼⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⣼⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⣿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⠹⣿⣿⣿⣷⣤⣶⣶⣿⣷⣿⣿⣶⣶⣶⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⠀⠈⠻⣿⣿⣿⣿⣋⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣯⣹⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀")
+        self.save_progress("⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀")
+        self.save_progress("⠀⠀⠀⠀⣠⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⠀")
+        self.save_progress("⠀⠀⠀⢀⣿⣿⣿⡿⢻⣿⣿⣿⡟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇")
+        self.save_progress("⠀⠀⠀⠸⣿⣿⣿⣷⣾⢿⣿⣿⣧⣿⣿⣿⣇⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧")
+        self.save_progress("⠀⠀⠀⠀⠘⠿⠿⠿⠿⠸⢿⣿⣿⣿⣿⣿⣿⣿⠻⣿⣿⣿⣿⡿⠿⣿⣿⠋")
+        self.save_progress("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠋⠉⠛⠛⠉⠉⠀⠈⠉⠉⠉⠀⠀⠀⠀⠀")
         self.save_progress("Successfully Connected to SPECTEROPS BLOODHOUND ENTERPRISE")
         return action_result.set_status(phantom.APP_SUCCESS)
 
@@ -444,11 +444,11 @@ class SpecteropsbloodhoundConnector(BaseConnector):
             # We have an existing artifact. Update it.
             artifact["container_id"] = existing_artifact["container"]
             artifact["id"] = existing_artifact["id"]
-            self.debug_print("Updating artifact {}".format(artifact["name"]), artifact)
+            self.debug_print(f"Updating artifact {artifact['name']}", artifact)
             self.save_artifacts([artifact])
         else:
             # This is a new artifact. Save it directly.
-            self.debug_print("Saving new artifact {}".format(artifact["name"]), artifact)
+            self.debug_print(f"Saving new artifact {artifact['name']}", artifact)
             artifact["container_id"] = container_id
             self.save_artifact(artifact)
 
@@ -532,7 +532,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         object_id = param.get("object_id")
-        ret_val, response = self._request("GET", f"/api/v2/search?q={object_id}", action_result)
+        _ret_val, response = self._request("GET", f"/api/v2/search?q={object_id}", action_result)
         if not response["data"]:
             return action_result.set_status(phantom.APP_SUCCESS, "Object Id not available")
 
@@ -638,7 +638,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         start_node = param.get("start_node")
         end_node = param.get("end_node")
         endpoint = f"/api/v2/graphs/shortest-path?start_node={start_node}&end_node={end_node}"
-        ret_val, response = self._request("GET", endpoint, action_result)
+        ret_val, _response = self._request("GET", endpoint, action_result)
         if ret_val:
             action_result.add_data({"response": True})
         else:
@@ -649,7 +649,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         self.save_progress(f"In action handler for: {self.get_action_identifier()}")
         action_result = self.add_action_result(ActionResult(dict(param)))
         name = param.get("name").replace(" ", "%20")
-        ret_val, response = self._request("GET", f"/api/v2/search?q={name}", action_result)
+        _ret_val, response = self._request("GET", f"/api/v2/search?q={name}", action_result)
         data = response["data"]
         if data:
             exact_match = next(
@@ -693,7 +693,7 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         self._token_key = config.get("token_key")
         self._token_id = config.get("token_id")
         self._start_date = config.get("historical_poll_time_range")
-        self._end_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+        self._end_date = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
         return phantom.APP_SUCCESS
 

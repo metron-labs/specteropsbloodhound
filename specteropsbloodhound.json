@@ -7,7 +7,7 @@
     "logo": "specteropsbloodhound.svg",
     "logo_dark": "specteropsbloodhound_dark.svg",
     "product_name": "Specterops Bloodhound",
-    "python_version": "3",
+    "python_version": "3.13",
     "product_version_regex": ".*",
     "publisher": "SpecterOps",
     "license": "Copyright (c) SpecterOps, 2025",
@@ -15,7 +15,7 @@
     "utctime_updated": "2024-11-22T08:03:27.498107Z",
     "package_name": "phantom_specteropsbloodhound",
     "main_module": "specteropsbloodhound_connector.py",
-    "min_phantom_version": "6.3.0",
+    "min_phantom_version": "7.0.0",
     "app_wizard_version": "1.0.0",
     "configuration": {
         "bloodhound_base_url": {
@@ -301,5 +301,8 @@
             },
             "versions": "EQ(*)"
         }
-    ]
+    ],
+    "pip313_dependencies": {
+        "wheel": []
+    }
 }
