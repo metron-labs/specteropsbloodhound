@@ -145,11 +145,11 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         self.save_progress("⠀⠀⠀⠀⠀⠀⣰⡇⠈⢻⢯⡉⠀⢇⠀⠀⠀⣹⢾⠦⢤⣘⣆⡴⠁⠀⢙⡿⣄")
         self.save_progress("⠀⠀⠀⠀⠀⠀⢹⡷⡄⢸⠀⠈⠳⣜⡆⣠⠞⠁⠀⣇⢀⡴⠋⢯⠓⠒⣼⡆⠈⣻⣆")
         self.save_progress("⠀⠀⠀⠀⠀⢀⡾⣇⠙⣾⣤⠤⠒⠒⡟⠲⢤⣀⣠⢾⡋⠀⠀⢈⠷⡏⠁⠙⢦⡇⠈⣳⣦")
-        self.save_progress("⠀⠀⠀⠀⣠⢿⠃⣸⡞⠁⢻⣍⣳⣶⡇⠀⠀⣸⢯⠀⣷⣴⣖⣁⠀⠙⣆⡀⢸⣡⠞⢱⠙⢧⡀")
-        self.save_progress("⠀⠀⠀⡿⠓⣾⠞⠁⠀⢀⡼⠁⣰⠃⠀⠀⢰⣧⣸⡼⠁⠰⢷⡌⠙⡏⠉⢙⣿⠁⠠⣯⡤⠤⢿⠆")
-        self.save_progress("⠀⠀⢴⣧⣀⣏⠀⠀⠀⠘⢯⠉⣿⡀⠀⠀⢸⣠⢺⠁⠀⠀⠘⣟⢦⣻⠀⢾⡝⡆⣰⡇⣹⣷⣻⡀")
-        self.save_progress("⠀⠀⠀⠻⣼⣉⠷⢶⠀⠀⠘⣾⣈⣧⡄⠀⢾⡥⣼⣄⣀⠀⠀⢸⣦⠻⡷⢤⡝⣿⣏⣷⣃⠹⣍⡷")
-        self.save_progress("⠀⠀⠀⠀⠋⠉⠉⠉⠀⠀⠀⠉⠳⣭⣟⣻⠀⢳⣤⣞⣛⣇⠀⠀⠈⠳⠿⠥⠽⠆⠀⠉⠉⠉⠛")
+        self.save_progress("⠀⠀⠀⠀⣠⢿⠃⣸⡞⠁⢻⣍⣳⣶⡇⠀⠀⣸⢯⠀⣷⣴⣖⣁⠀⠙⣆⠀⠀⡠⠊⠉⠙⢧⡀")
+        self.save_progress("⠀⠀⠀⡿⠓⣾⠞⠁⠀⢀⡼⠁⣰⠃⠀⠀⢰⣧⣸⡼⠁⠰⢷⡌⠙⡏⠀⠀⣿⠁⠀⠀⢀⡿⠆")
+        self.save_progress("⠀⠀⢰⣧⠀⣏⠀⠀⠀⠘⢯⠉⣿⡀⠀⠀⢸⣠⢺⠁⠀⠀⠘⣆⠀⠀⠀⠀⢀⢾⡄⠀⣹⣷⡀")
+        self.save_progress("⠀⠀⠀⠻⠏⠀⠷⢶⠀⠀⠘⣾⠀⣧⡄⠀⢾⡥⠀⣄⣀⠀⠀⠘⣿⠀⠀⢀⡼⣿⣇⠀⠀⠹⡷")
+        self.save_progress("⠀⠀⠀⠀⠋⠀⠉⠁⠀⠀⠀⠉⠳⠁⠀⠀⠀⠀⠳⣄⠀⠀⠀⠀⠈⠓⠄⠀⠀⠀⠀⠀⠉⠁")
         self.save_progress("Successfully Connected to SPECTEROPS BLOODHOUND ENTERPRISE")
         return action_result.set_status(phantom.APP_SUCCESS)
 
@@ -317,34 +317,35 @@ class SpecteropsbloodhoundConnector(BaseConnector):
             return self._title_cache[path_id]
 
         endpoint = f"/api/v2/assets/findings/{path_id}/title.md"
-        ret_val, path_title = self._request("GET", endpoint, action_result)
+        # Use a throwaway result so a missing title.md does not fail the poll action.
+        title_result = ActionResult(dict())
+        ret_val, path_title = self._request("GET", endpoint, title_result)
 
-        if phantom.is_fail(ret_val):
-            action_result.set_status(
-                phantom.APP_ERROR,
-                f"Failed to fetch finding title for path_id: {path_id}",
-            )
-            return None
+        if phantom.is_fail(ret_val) or path_title is None:
+            self.debug_print(f"Finding title unavailable for path_id: {path_id}, defaulting to empty string")
+            self.save_progress(f"Finding title not available for {path_id}, using empty title")
+            self._title_cache[path_id] = ""
+            return ""
 
-        self._title_cache[path_id] = path_title.strip()
-
-        return path_title
+        title = path_title.strip() if isinstance(path_title, str) else ""
+        self._title_cache[path_id] = title
+        return title
 
     def _get_container_dict_for_finding(self, finding, domain_name, action_result):
         finding_id = finding["id"]
         finding_type = finding["Finding"]
-        path_title = self._get_finding_title(finding_type, action_result)
+        path_title = self._get_finding_title(finding_type, action_result) or ""
         self.debug_print(f"Building container for finding {finding['id']}")
         # Build the container JSON
         container_json = {}
         container_json["name"] = f"{domain_name} : {path_title} : {finding_id}"
         container_json["data"] = finding
         container_json["description"] = finding_type
-        container_json["source_data_identifier"] = f"{domain_name}:{path_title.strip()}:{finding_id}"
+        container_json["source_data_identifier"] = f"{domain_name}:{path_title}:{finding_id}"
         container_json["severity"] = self._convert_risk_to_severity(finding["severity"])
 
         self.debug_print(f"Create artifacts for the the finding id: {finding['id']}")
-        if self._does_container_exist_for_finding(f"{domain_name}:{path_title.strip()}:{finding_id}"):
+        if self._does_container_exist_for_finding(f"{domain_name}:{path_title}:{finding_id}"):
             container_json["artifacts"] = []
         else:
             container_json["artifacts"] = self._get_artifacts_dict_for_finding(finding)
