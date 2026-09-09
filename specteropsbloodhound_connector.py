@@ -541,15 +541,21 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         object_id = param.get("object_id")
-        _ret_val, response = self._request("GET", f"/api/v2/search?q={object_id}", action_result)
-        if not response["data"]:
+        if not object_id:
             return action_result.set_status(phantom.APP_SUCCESS, "Object Id not available")
 
-        obj_type = response["data"][0]["type"]
+        search_result = ActionResult(dict())
+        ret_val, response = self._request("GET", f"/api/v2/search?q={object_id}", search_result)
+        search_data = (response or {}).get("data") or []
+        if phantom.is_fail(ret_val) or not search_data:
+            return action_result.set_status(phantom.APP_SUCCESS, "Object Id not available")
+
+        search_hit = search_data[0] if isinstance(search_data[0], dict) else {}
+        obj_type = search_hit.get("type") or ""
         primary_response = self._fetch_primary_response(object_id, obj_type, action_result)
 
-        if not primary_response:
-            return action_result.set_status(phantom.APP_ERROR, "Failed to fetch primary response")
+        if not isinstance(primary_response, dict) or not primary_response.get("data"):
+            return action_result.set_status(phantom.APP_SUCCESS, "Failed to fetch primary response")
 
         if obj_type.startswith("AZ"):
             self._handle_azure_types(object_id, obj_type, primary_response, action_result)
@@ -609,8 +615,11 @@ class SpecteropsbloodhoundConnector(BaseConnector):
             else:
                 action_result.append_to_message(f"Failed to fetch data for related type: {rel_type}")
 
-        primary_response["data"]["inbound_object_control"] = inbound_control_count
-        primary_response["data"]["descendents"] = {"descendent_counts": descendent_count}
+        data = primary_response.setdefault("data", {})
+        if not isinstance(data, dict):
+            return
+        data["inbound_object_control"] = inbound_control_count
+        data["descendents"] = {"descendent_counts": descendent_count}
 
     def _update_primary_response(
         self,
@@ -631,13 +640,17 @@ class SpecteropsbloodhoundConnector(BaseConnector):
             return
 
         count_value = secondary_response["count"]
-        primary_response["data"][mapping_key] = count_value
+        data = primary_response.setdefault("data", {})
+        if isinstance(data, dict):
+            data[mapping_key] = count_value
 
     def _call_api(self, path, action_result):
         """Utility function to make an API call."""
-        ret_val, response = self._request("GET", path, action_result)
-        if not ret_val:
-            action_result.append_to_message(f"Failed to fetch data for API: {path}")
+        # Use a throwaway result so a 404 does not mark the parent action failed.
+        api_result = ActionResult(dict())
+        ret_val, response = self._request("GET", path, api_result)
+        if phantom.is_fail(ret_val):
+            action_result.append_to_message(api_result.get_message() or f"Failed to fetch data for API: {path}")
             return None
         return response
 
