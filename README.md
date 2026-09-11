@@ -1,4 +1,4 @@
-# SpecterOps BloodHound
+# BloodHound Enterprise for Splunk SOAR
 
 Publisher: SpecterOps \
 Connector Version: 1.0.2 \
