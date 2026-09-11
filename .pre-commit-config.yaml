@@ -48,10 +48,12 @@ repos:
     hooks:
       - id: mdformat
         exclude: "release_notes/.*"
-  - repo: https://github.com/returntocorp/semgrep
+- repo: https://github.com/returntocorp/semgrep
     rev: v1.89.0
     hooks:
       - id: semgrep
+        # Fixes 'ModuleNotFoundError: No module named pkg_resources' on Python 3.9+ environments
+        additional_dependencies: ['setuptools<70.0.0']
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
@@ -64,8 +66,9 @@ repos:
     rev: v2.0.9
     hooks:
       - id: build-docs
+        args: ["."]
       - id: copyright
-      # - id: package-app-dependencies
-      # - id: notice-file
+        args: ["."]
       - id: release-notes
+        args: ["."]
       - id: static-tests
