@@ -1,7 +1,7 @@
 # SpecterOps BloodHound
 
 Publisher: SpecterOps \
-Connector Version: 1.0.1 \
+Connector Version: 1.0.2 \
 Product Vendor: SpecterOps \
 Product Name: Specterops Bloodhound \
 Minimum Product Version: 7.0.0
@@ -174,7 +174,7 @@ ______________________________________________________________________
 
 Auto-generated Splunk SOAR Connector documentation.
 
-Copyright 2025 Splunk Inc.
+Copyright 2026 Splunk Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
