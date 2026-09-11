@@ -657,8 +657,8 @@ class SpecteropsbloodhoundConnector(BaseConnector):
     def _handle_does_path_exist(self, param):
         self.save_progress(f"In action handler for: {self.get_action_identifier()}")
         action_result = self.add_action_result(ActionResult(dict(param)))
-        start_node = param.get("start_node")
-        end_node = param.get("end_node")
+        start_node = quote(param.get("start_node", ""), safe="")
+        end_node = quote(param.get("end_node", ""), safe="")
         endpoint = f"/api/v2/graphs/shortest-path?start_node={start_node}&end_node={end_node}"
         ret_val, _response = self._request("GET", endpoint, action_result)
         if ret_val:
