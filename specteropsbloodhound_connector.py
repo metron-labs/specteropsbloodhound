@@ -547,6 +547,8 @@ class SpecteropsbloodhoundConnector(BaseConnector):
 
         ret_val, response = self._request("GET", f"/api/v2/search?q={object_id}", action_result)
         if phantom.is_fail(ret_val):
+            if self._is_http_not_found(action_result):
+                return action_result.set_status(phantom.APP_SUCCESS, "Object Id not available")
             return action_result.get_status()
 
         search_data = (response or {}).get("data") or []
@@ -557,10 +559,12 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         obj_type = search_hit.get("type") or ""
         primary_response = self._fetch_primary_response(object_id, obj_type, action_result)
         if phantom.is_fail(action_result.get_status()):
+            if self._is_http_not_found(action_result):
+                return action_result.set_status(phantom.APP_SUCCESS, "Node is missing")
             return action_result.get_status()
 
         if not isinstance(primary_response, dict) or not primary_response.get("data"):
-            return action_result.set_status(phantom.APP_SUCCESS, "Failed to fetch primary response")
+            return action_result.set_status(phantom.APP_SUCCESS, "Node is missing")
 
         if obj_type.startswith("AZ"):
             self._handle_azure_types(object_id, obj_type, primary_response, action_result)
@@ -651,13 +655,36 @@ class SpecteropsbloodhoundConnector(BaseConnector):
         if isinstance(data, dict):
             data[mapping_key] = count_value
 
-    def _is_http_not_found(self, action_result):
-        """Return True when a failed request was an HTTP 404."""
+    def _http_status_code(self, action_result):
+        """Best-effort HTTP status from a request ActionResult."""
         if hasattr(action_result, "get_debug_data"):
             debug = action_result.get_debug_data() or {}
-            if isinstance(debug, dict) and debug.get("r_status_code") == 404:
-                return True
-        return "Status Code: 404" in (action_result.get_message() or "")
+            candidates = debug if isinstance(debug, list) else [debug]
+            for item in candidates:
+                if not isinstance(item, dict):
+                    continue
+                status = item.get("r_status_code")
+                try:
+                    return int(status)
+                except (TypeError, ValueError):
+                    continue
+        message = action_result.get_message() or ""
+        marker = "Status Code: "
+        if marker in message:
+            rest = message.split(marker, 1)[1]
+            digits = ""
+            for ch in rest:
+                if ch.isdigit():
+                    digits += ch
+                else:
+                    break
+            if digits:
+                return int(digits)
+        return None
+
+    def _is_http_not_found(self, action_result):
+        """Return True when a failed request was an HTTP 404."""
+        return self._http_status_code(action_result) == 404 or "Status Code: 404" in (action_result.get_message() or "")
 
     def _call_api(self, path, action_result):
         """Utility function to make an API call.
